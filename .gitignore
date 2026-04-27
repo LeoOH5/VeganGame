@@ -1,0 +1,16 @@
+# Vercel
+.vercel
+
+# Hyperframes build artifacts
+promo/renders/
+promo/frames/
+promo/.hyperframes/
+promo/node_modules/
+promo/package-lock.json
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/

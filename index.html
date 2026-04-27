@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>No-Vegan Game 🥩</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    #title-screen {
+      position: fixed;
+      inset: 0;
+      background: #0a0a0f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      gap: 24px;
+    }
+
+    #title-screen h1 {
+      font-size: 56px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff6b35, #f7c948, #ff6b35);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    #title-screen p {
+      font-size: 18px;
+      color: #aaa;
+      text-align: center;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    .rule-box {
+      display: flex;
+      gap: 32px;
+      margin-top: 8px;
+    }
+
+    .rule {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 32px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .rule.good {
+      background: rgba(255, 107, 53, 0.15);
+      border: 1px solid rgba(255, 107, 53, 0.4);
+      color: #ff8c5a;
+    }
+
+    .rule.bad {
+      background: rgba(100, 200, 100, 0.1);
+      border: 1px solid rgba(100, 200, 100, 0.3);
+      color: #7ecf7e;
+    }
+
+    .rule span:first-child { font-size: 40px; }
+
+    #start-btn {
+      margin-top: 8px;
+      padding: 16px 48px;
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ff6b35, #f7c948);
+      color: #000;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 24px rgba(255, 107, 53, 0.4);
+    }
+
+    #start-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 32px rgba(255, 107, 53, 0.6);
+    }
+
+    #game-wrapper {
+      position: relative;
+      display: none;
+    }
+
+    #video {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      border-radius: 20px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #canvas {
+      border-radius: 20px;
+      display: block;
+      box-shadow: 0 0 60px rgba(255, 107, 53, 0.2);
+    }
+
+    #hud {
+      position: absolute;
+      top: 16px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      pointer-events: none;
+    }
+
+    .hud-box {
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 22px;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    #score-display {
+      color: #f7c948;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    #timer-display {
+      color: #fff;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    #status-display {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    #game-over-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      gap: 20px;
+    }
+
+    #game-over-screen h2 {
+      font-size: 52px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff6b35, #f7c948);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    #final-score {
+      font-size: 28px;
+      color: #f7c948;
+      font-weight: 700;
+    }
+
+    #rank-display {
+      font-size: 48px;
+    }
+
+    #retry-btn {
+      padding: 14px 40px;
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ff6b35, #f7c948);
+      color: #000;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.15s;
+      margin-top: 8px;
+    }
+
+    #retry-btn:hover { transform: scale(1.05); }
+
+    #loading-msg {
+      position: fixed;
+      inset: 0;
+      background: #0a0a0f;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      gap: 16px;
+      font-size: 18px;
+      color: #aaa;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255,107,53,0.2);
+      border-top-color: #ff6b35;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #mouth-indicator {
+      position: absolute;
+      pointer-events: none;
+      border: 3px solid rgba(255, 200, 50, 0.8);
+      border-radius: 50%;
+      box-shadow: 0 0 16px rgba(255, 200, 50, 0.5);
+      transition: all 0.05s;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Title Screen -->
+<div id="title-screen">
+  <h1>🥩 No-Vegan<br>Game</h1>
+  <p>카메라로 입을 인식합니다.<br>입을 벌려서 고기를 먹고, 야채는 피하세요!</p>
+  <div class="rule-box">
+    <div class="rule good">
+      <span>🥩🍖🥓🍗🌭</span>
+      <span>+10점 (먹어라!)</span>
+    </div>
+    <div class="rule bad">
+      <span>🥦🥕🧅🌽🥒</span>
+      <span>-5점 (피해라!)</span>
+    </div>
+  </div>
+  <button id="start-btn">게임 시작</button>
+</div>
+
+<!-- Loading -->
+<div id="loading-msg">
+  <div class="spinner"></div>
+  <span id="loading-text">AI 모델 로딩 중...</span>
+</div>
+
+<!-- Game -->
+<div id="game-wrapper">
+  <video id="video" playsinline autoplay muted></video>
+  <canvas id="canvas"></canvas>
+  <div id="hud">
+    <div class="hud-box" id="score-display">점수: 0</div>
+    <div class="hud-box" id="timer-display">⏱ 60</div>
+    <div class="hud-box" id="status-display">😐 대기 중</div>
+  </div>
+  <div id="mouth-indicator"></div>
+</div>
+
+<!-- Game Over -->
+<div id="game-over-screen">
+  <div id="rank-display">🏆</div>
+  <h2>게임 종료!</h2>
+  <div id="final-score">최종 점수: 0</div>
+  <div id="comment-display" style="font-size:18px;color:#aaa;"></div>
+  <button id="retry-btn">다시 하기</button>
+</div>
+
+<script type="module">
+import {
+  FaceLandmarker,
+  FilesetResolver,
+  DrawingUtils,
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm";
+
+// ── Constants ────────────────────────────────────────────────────────────────
+const GAME_DURATION = 60;
+const CANVAS_W = 780;
+const CANVAS_H = 540;
+
+const MEATS = ['🥩','🍖','🥓','🍗','🌭','🫀'];
+const VEGS  = ['🥦','🥕','🧅','🌽','🥒','🥬','🫑'];
+
+// MediaPipe mouth landmark indices
+const UPPER_LIP = 13;
+const LOWER_LIP = 14;
+const LIP_LEFT  = 61;
+const LIP_RIGHT = 291;
+
+// ── DOM ──────────────────────────────────────────────────────────────────────
+const titleScreen   = document.getElementById('title-screen');
+const loadingMsg    = document.getElementById('loading-msg');
+const loadingText   = document.getElementById('loading-text');
+const gameWrapper   = document.getElementById('game-wrapper');
+const video         = document.getElementById('video');
+const canvas        = document.getElementById('canvas');
+const scoreDisplay  = document.getElementById('score-display');
+const timerDisplay  = document.getElementById('timer-display');
+const statusDisplay = document.getElementById('status-display');
+const gameOverScreen = document.getElementById('game-over-screen');
+const finalScoreEl  = document.getElementById('final-score');
+const rankDisplay   = document.getElementById('rank-display');
+const commentDisplay = document.getElementById('comment-display');
+const mouthIndicator = document.getElementById('mouth-indicator');
+const startBtn  = document.getElementById('start-btn');
+const retryBtn  = document.getElementById('retry-btn');
+
+const ctx = canvas.getContext('2d');
+canvas.width  = CANVAS_W;
+canvas.height = CANVAS_H;
+
+gameWrapper.style.width  = CANVAS_W + 'px';
+gameWrapper.style.height = CANVAS_H + 'px';
+
+// ── State ────────────────────────────────────────────────────────────────────
+let faceLandmarker = null;
+let animId = null;
+let gameActive = false;
+
+let score = 0;
+let timeLeft = GAME_DURATION;
+let timerInterval = null;
+
+let mouthX = CANVAS_W / 2;
+let mouthY = CANVAS_H - 100;
+let mouthRadius = 40;
+let mouthOpen = false;
+
+let items = [];
+let particles = [];
+let lastTime = 0;
+let spawnAccum = 0;
+let spawnInterval = 1400; // ms between spawns
+
+// ── Screen effects ───────────────────────────────────────────────────────────
+let vegEffect   = { alpha: 0, scale: 1.6, textAlpha: 0, shake: 0 };
+let meatEffect  = { alpha: 0 };
+let heartParticles = [];
+
+// ── Load Model ───────────────────────────────────────────────────────────────
+async function loadModel() {
+  loadingText.textContent = 'AI 모델 로딩 중... (최초 실행 시 30초 소요)';
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+  );
+  faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+      delegate: "GPU",
+    },
+    runningMode: "VIDEO",
+    numFaces: 1,
+  });
+}
+
+// ── Camera ───────────────────────────────────────────────────────────────────
+async function startCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { width: CANVAS_W, height: CANVAS_H, facingMode: 'user' },
+    audio: false,
+  });
+  video.srcObject = stream;
+  await new Promise(r => video.onloadedmetadata = r);
+  video.play();
+}
+
+// ── Items ────────────────────────────────────────────────────────────────────
+function spawnItem() {
+  const isMeat = Math.random() > 0.45;
+  const emojis = isMeat ? MEATS : VEGS;
+  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+  const size = 44 + Math.random() * 18;
+  items.push({
+    x: size + Math.random() * (CANVAS_W - size * 2),
+    y: -size,
+    size,
+    emoji,
+    isMeat,
+    speed: 2.8 + Math.random() * 2.4,
+    rotation: (Math.random() - 0.5) * 0.04,
+    angle: 0,
+    eaten: false,
+  });
+}
+
+// ── Particles ────────────────────────────────────────────────────────────────
+function spawnParticles(x, y, color) {
+  for (let i = 0; i < 14; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 5;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      alpha: 1,
+      size: 5 + Math.random() * 8,
+      color,
+      life: 0,
+    });
+  }
+}
+
+// ── Game Loop ─────────────────────────────────────────────────────────────────
+function gameLoop(timestamp) {
+  if (!gameActive) return;
+
+  const dt = timestamp - lastTime;
+  lastTime = timestamp;
+  spawnAccum += dt;
+
+  // Dynamic difficulty
+  const elapsed = GAME_DURATION - timeLeft;
+  spawnInterval = Math.max(600, 1400 - elapsed * 8);
+
+  if (spawnAccum >= spawnInterval) {
+    spawnItem();
+    spawnAccum = 0;
+  }
+
+  // ── Face detection ───────────────────────────────────────────────────────
+  const results = faceLandmarker.detectForVideo(video, timestamp);
+
+  if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+    const lm = results.faceLandmarks[0];
+
+    // Mirror x (video is mirrored in CSS but we draw on canvas directly)
+    const rawUpper = lm[UPPER_LIP];
+    const rawLower = lm[LOWER_LIP];
+    const rawLeft  = lm[LIP_LEFT];
+    const rawRight = lm[LIP_RIGHT];
+
+    // Mirror: canvas x = (1 - landmark.x) * CANVAS_W
+    mouthX = (1 - (rawLeft.x + rawRight.x) / 2) * CANVAS_W;
+    mouthY = ((rawUpper.y + rawLower.y) / 2) * CANVAS_H;
+
+    const lipW = Math.abs(rawLeft.x - rawRight.x) * CANVAS_W;
+    const lipH = Math.abs(rawUpper.y - rawLower.y) * CANVAS_H;
+
+    mouthRadius = lipW * 0.55;
+    mouthOpen   = lipH > lipW * 0.18; // open threshold
+
+    // Update indicator
+    const mirroredLeft = (1 - rawRight.x) * CANVAS_W;
+    mouthIndicator.style.display = 'block';
+    mouthIndicator.style.width   = mouthRadius * 2 + 'px';
+    mouthIndicator.style.height  = mouthRadius * 2 + 'px';
+    mouthIndicator.style.left    = (mouthX - mouthRadius) + 'px';
+    mouthIndicator.style.top     = (mouthY - mouthRadius) + 'px';
+    mouthIndicator.style.borderColor = mouthOpen
+      ? 'rgba(255,220,50,0.9)'
+      : 'rgba(255,255,255,0.25)';
+  } else {
+    mouthIndicator.style.display = 'none';
+  }
+
+  // ── Draw background (from camera) ────────────────────────────────────────
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.translate(-CANVAS_W, 0);
+  ctx.drawImage(video, 0, 0, CANVAS_W, CANVAS_H);
+  ctx.restore();
+
+  // Dark overlay
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // ── Update & draw items ──────────────────────────────────────────────────
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    if (item.eaten) { items.splice(i, 1); continue; }
+
+    item.y += item.speed;
+    item.angle += item.rotation;
+
+    // Collision: item center within mouthRadius when mouth is open
+    if (mouthOpen) {
+      const dx = item.x - mouthX;
+      const dy = item.y - mouthY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const catchRadius = mouthRadius + item.size * 0.4;
+
+      if (dist < catchRadius) {
+        item.eaten = true;
+        if (item.isMeat) {
+          score += 10;
+          spawnParticles(item.x, item.y, '#ff6b35');
+          showFloatingText('+10', item.x, item.y, '#f7c948');
+          triggerMeatEffect();
+        } else {
+          score -= 5;
+          spawnParticles(item.x, item.y, '#64c864');
+          showFloatingText('-5', item.x, item.y, '#7ecf7e');
+          triggerVegEffect();
+        }
+        score = Math.max(0, score);
+        scoreDisplay.textContent = '점수: ' + score;
+        continue;
+      }
+    }
+
+    // Out of bounds
+    if (item.y > CANVAS_H + item.size) {
+      items.splice(i, 1);
+      continue;
+    }
+
+    // Draw
+    ctx.save();
+    ctx.translate(item.x, item.y);
+    ctx.rotate(item.angle);
+    ctx.font = item.size + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Glow for meat
+    if (item.isMeat) {
+      ctx.shadowColor = 'rgba(255,100,50,0.6)';
+      ctx.shadowBlur = 18;
+    }
+    ctx.fillText(item.emoji, 0, 0);
+    ctx.restore();
+  }
+
+  // ── Particles ────────────────────────────────────────────────────────────
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15;
+    p.life += 0.04;
+    p.alpha = Math.max(0, 1 - p.life);
+
+    if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * (1 - p.life * 0.5), 0, Math.PI * 2);
+    ctx.fillStyle = p.color + Math.floor(p.alpha * 255).toString(16).padStart(2, '0');
+    ctx.fill();
+  }
+
+  // ── Screen effects ───────────────────────────────────────────────────────
+  drawMeatEffect();
+  drawVegEffect();
+  drawHeartParticles();
+
+  // ── Floating texts ───────────────────────────────────────────────────────
+  drawFloatingTexts();
+
+  // ── Mouth open indicator on canvas ───────────────────────────────────────
+  if (mouthOpen) {
+    ctx.beginPath();
+    ctx.arc(mouthX, mouthY, mouthRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,220,50,0.5)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,220,50,0.08)';
+    ctx.fill();
+  }
+
+  // Status
+  statusDisplay.textContent = mouthOpen ? '😮 입 열림!' : '😐 닫힘';
+
+  animId = requestAnimationFrame(gameLoop);
+}
+
+// ── Veg effect: red flash + "No Vegan!" text ─────────────────────────────────
+function triggerVegEffect() {
+  vegEffect.alpha     = 1;
+  vegEffect.textAlpha = 1;
+  vegEffect.scale     = 1.7;
+  vegEffect.shake     = 18;
+}
+
+function drawVegEffect() {
+  // Screen red flash
+  if (vegEffect.alpha > 0) {
+    ctx.save();
+    ctx.fillStyle = `rgba(200,0,0,${vegEffect.alpha * 0.45})`;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.restore();
+    vegEffect.alpha = Math.max(0, vegEffect.alpha - 0.045);
+  }
+
+  // "No Vegan!" big text
+  if (vegEffect.textAlpha > 0) {
+    const cx = CANVAS_W / 2 + (Math.random() - 0.5) * vegEffect.shake * 2;
+    const cy = CANVAS_H / 2 + (Math.random() - 0.5) * vegEffect.shake * 2;
+    const sz = Math.round(88 * vegEffect.scale);
+
+    ctx.save();
+    ctx.globalAlpha = vegEffect.textAlpha;
+    ctx.translate(cx, cy);
+
+    ctx.font = `900 ${sz}px 'Segoe UI', Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Outer stroke (dark)
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = 'rgba(80,0,0,0.9)';
+    ctx.strokeText('No Vegan!', 0, 0);
+
+    // Red-to-yellow gradient fill
+    const grad = ctx.createLinearGradient(0, -sz * 0.5, 0, sz * 0.5);
+    grad.addColorStop(0, '#ff2222');
+    grad.addColorStop(0.5, '#ff8c00');
+    grad.addColorStop(1, '#ff2222');
+    ctx.fillStyle = grad;
+    ctx.fillText('No Vegan!', 0, 0);
+
+    ctx.restore();
+
+    vegEffect.textAlpha = Math.max(0, vegEffect.textAlpha - 0.028);
+    vegEffect.scale     = Math.max(1.0, vegEffect.scale - 0.025);
+    vegEffect.shake     = Math.max(0, vegEffect.shake - 1.2);
+  }
+}
+
+// ── Meat effect: warm golden recovery glow ────────────────────────────────────
+function triggerMeatEffect() {
+  meatEffect.alpha = 1;
+  // Spawn heart particles
+  for (let i = 0; i < 8; i++) {
+    heartParticles.push({
+      x: 80 + Math.random() * (CANVAS_W - 160),
+      y: CANVAS_H * 0.6 + Math.random() * (CANVAS_H * 0.3),
+      vy: -(1.5 + Math.random() * 2.5),
+      vx: (Math.random() - 0.5) * 1.2,
+      alpha: 1,
+      size: 22 + Math.random() * 18,
+      life: 0,
+    });
+  }
+}
+
+function drawMeatEffect() {
+  if (meatEffect.alpha <= 0) return;
+
+  // Radial vignette glow from edges inward (warm gold)
+  const rad = ctx.createRadialGradient(
+    CANVAS_W / 2, CANVAS_H / 2, CANVAS_H * 0.25,
+    CANVAS_W / 2, CANVAS_H / 2, CANVAS_W * 0.85,
+  );
+  rad.addColorStop(0,   `rgba(255,180,0,0)`);
+  rad.addColorStop(0.6, `rgba(255,140,0,${meatEffect.alpha * 0.18})`);
+  rad.addColorStop(1,   `rgba(255,200,50,${meatEffect.alpha * 0.55})`);
+
+  ctx.save();
+  ctx.fillStyle = rad;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.restore();
+
+  meatEffect.alpha = Math.max(0, meatEffect.alpha - 0.035);
+}
+
+function drawHeartParticles() {
+  for (let i = heartParticles.length - 1; i >= 0; i--) {
+    const h = heartParticles[i];
+    h.x += h.vx;
+    h.y += h.vy;
+    h.life += 0.03;
+    h.alpha = Math.max(0, 1 - h.life);
+
+    if (h.alpha <= 0) { heartParticles.splice(i, 1); continue; }
+
+    ctx.save();
+    ctx.globalAlpha = h.alpha;
+    ctx.font = h.size + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(255,120,0,0.8)';
+    ctx.shadowBlur = 12;
+    ctx.fillText('❤️', h.x, h.y);
+    ctx.restore();
+  }
+}
+
+// ── Floating text ─────────────────────────────────────────────────────────────
+const floatingTexts = [];
+
+function showFloatingText(text, x, y, color) {
+  floatingTexts.push({ text, x, y, color, alpha: 1, vy: -2 });
+}
+
+function drawFloatingTexts() {
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    ft.y += ft.vy;
+    ft.alpha -= 0.022;
+    if (ft.alpha <= 0) { floatingTexts.splice(i, 1); continue; }
+
+    ctx.save();
+    ctx.globalAlpha = ft.alpha;
+    ctx.font = 'bold 28px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = ft.color;
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 6;
+    ctx.fillText(ft.text, ft.x, ft.y);
+    ctx.restore();
+  }
+}
+
+// ── Timer ─────────────────────────────────────────────────────────────────────
+function startTimer() {
+  timeLeft = GAME_DURATION;
+  timerDisplay.textContent = '⏱ ' + timeLeft;
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerDisplay.textContent = '⏱ ' + timeLeft;
+    if (timeLeft <= 10) {
+      timerDisplay.style.color = '#ff4444';
+    }
+    if (timeLeft <= 0) {
+      endGame();
+    }
+  }, 1000);
+}
+
+// ── End game ──────────────────────────────────────────────────────────────────
+function endGame() {
+  gameActive = false;
+  clearInterval(timerInterval);
+  cancelAnimationFrame(animId);
+  mouthIndicator.style.display = 'none';
+
+  // Rank
+  let rank, comment;
+  if (score >= 200) { rank = '👑'; comment = '진정한 육식주의자!'; }
+  else if (score >= 120) { rank = '🥇'; comment = '고기 마스터!'; }
+  else if (score >= 60) { rank = '🥈'; comment = '괜찮은 노비건이에요!'; }
+  else if (score >= 20) { rank = '🥉'; comment = '야채를 너무 많이 먹었어요...'; }
+  else { rank = '🥦'; comment = '혹시 비건이세요?'; }
+
+  rankDisplay.textContent = rank;
+  finalScoreEl.textContent = '최종 점수: ' + score;
+  commentDisplay.textContent = comment;
+
+  gameOverScreen.style.display = 'flex';
+}
+
+// ── Start game ────────────────────────────────────────────────────────────────
+async function startGame() {
+  titleScreen.style.display = 'none';
+  loadingMsg.style.display  = 'flex';
+
+  try {
+    if (!faceLandmarker) {
+      await loadModel();
+      loadingText.textContent = '카메라 연결 중...';
+    }
+    await startCamera();
+  } catch (e) {
+    alert('오류: ' + e.message + '\n\n카메라 권한을 허용하고 HTTPS 또는 localhost에서 실행하세요.');
+    loadingMsg.style.display = 'none';
+    titleScreen.style.display = 'flex';
+    return;
+  }
+
+  loadingMsg.style.display = 'none';
+  gameWrapper.style.display = 'block';
+  gameOverScreen.style.display = 'none';
+
+  // Reset state
+  score = 0;
+  items = [];
+  particles = [];
+  heartParticles = [];
+  floatingTexts.length = 0;
+  spawnAccum = 0;
+  vegEffect.alpha = 0; vegEffect.textAlpha = 0;
+  meatEffect.alpha = 0;
+  timerDisplay.style.color = '#fff';
+  scoreDisplay.textContent = '점수: 0';
+
+  gameActive = true;
+  lastTime = performance.now();
+
+  startTimer();
+  animId = requestAnimationFrame(gameLoop);
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+startBtn.addEventListener('click', startGame);
+retryBtn.addEventListener('click', () => {
+  gameOverScreen.style.display = 'none';
+  items = [];
+  particles = [];
+  heartParticles = [];
+  floatingTexts.length = 0;
+  spawnAccum = 0;
+  score = 0;
+  vegEffect.alpha = 0; vegEffect.textAlpha = 0;
+  meatEffect.alpha = 0;
+  timerDisplay.style.color = '#fff';
+  scoreDisplay.textContent = '점수: 0';
+  gameActive = true;
+  lastTime = performance.now();
+  startTimer();
+  animId = requestAnimationFrame(gameLoop);
+});
+</script>
+</body>
+</html>
